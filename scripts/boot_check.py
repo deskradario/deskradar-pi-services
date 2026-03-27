@@ -7,8 +7,8 @@ import os
 import syslog
 import time
 
-MEDIA_PATH = "/media/pi"
-TIMEOUT_SECS = 15
+MEDIA_PATH = "/media/deskradar"
+TIMEOUT_SECS = 30
 CONFIG_DIR = "/etc/deskradar"
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 CONFIG_EXAMPLE_PATH = "/opt/deskradar/config-example.json"
