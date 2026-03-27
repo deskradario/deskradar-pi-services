@@ -8,7 +8,8 @@ import syslog
 import time
 
 MEDIA_PATH = "/media/deskradar"
-TIMEOUT_SECS = 30
+DEVICE_TIMEOUT_SECS = 30
+IP_FILE_TIMEOUT_SECS = 30
 CONFIG_DIR = "/etc/deskradar"
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 CONFIG_EXAMPLE_PATH = "/opt/deskradar/config-example.json"
@@ -36,24 +37,37 @@ def wait_for_device():
     """Poll for a CIRCUITPY device, exiting with error if none appears within the timeout."""
     log("Waiting for CIRCUITPY device...")
     elapsed = 0
-    while elapsed < TIMEOUT_SECS:
+    while elapsed < DEVICE_TIMEOUT_SECS:
         device_path = find_device()
         if device_path:
-            log(f"Found device at {device_path}")
+            log(f"CIRCUITPY found after {elapsed}s at {device_path}")
             return device_path
         time.sleep(1)
         elapsed += 1
 
-    log_error(f"No CIRCUITPY device found after {TIMEOUT_SECS}s.")
+    log_error(f"No CIRCUITPY device found after {DEVICE_TIMEOUT_SECS}s.")
+    raise SystemExit(1)
+
+
+def wait_for_ip_file(device_path):
+    """Poll for ip.txt on the device, exiting with error if it doesn't appear within the timeout."""
+    ip_file = os.path.join(device_path, "ip.txt")
+    log("Waiting for ip.txt...")
+    elapsed = 0
+    while elapsed < IP_FILE_TIMEOUT_SECS:
+        if os.path.isfile(ip_file):
+            log(f"ip.txt found after {elapsed}s")
+            return ip_file
+        time.sleep(1)
+        elapsed += 1
+
+    log_error(f"ip.txt not found after {IP_FILE_TIMEOUT_SECS}s.")
     raise SystemExit(1)
 
 
 def read_ip(device_path):
     """Read and validate the IP address from ip.txt on the device."""
-    ip_file = os.path.join(device_path, "ip.txt")
-    if not os.path.isfile(ip_file):
-        log_error(f"{ip_file} not found on device")
-        raise SystemExit(1)
+    ip_file = wait_for_ip_file(device_path)
 
     raw = open(ip_file).read().strip()
     try:
