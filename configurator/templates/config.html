@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>DeskRadar Config</h1>
+
+<form method="POST" action="/config">
+
+    <div class="card">
+        <h2>Location</h2>
+        <label for="LAT">LAT</label>
+        <input type="number" id="LAT" name="LAT" step="any" value="{{ config.get('LAT', '') }}">
+        <label for="LON">LON</label>
+        <input type="number" id="LON" name="LON" step="any" value="{{ config.get('LON', '') }}">
+        <button type="button" id="geolocate-btn" style="margin-top: 0.5rem;">Use My Location</button>
+    </div>
+
+    <div class="card">
+        <h2>Display</h2>
+        <label for="MATRIX_SIZE_PX">MATRIX_SIZE_PX</label>
+        <input type="number" id="MATRIX_SIZE_PX" name="MATRIX_SIZE_PX" value="{{ config.get('MATRIX_SIZE_PX', '') }}">
+        <label for="DISPLAY_RADIUS_NM">DISPLAY_RADIUS_NM</label>
+        <input type="number" id="DISPLAY_RADIUS_NM" name="DISPLAY_RADIUS_NM" value="{{ config.get('DISPLAY_RADIUS_NM', '') }}">
+
+        <label style="margin-top: 0.5rem;">
+            <input type="checkbox" name="DRAW_RETICULE" {% if config.get('DRAW_RETICULE') %}checked{% endif %}>
+            DRAW_RETICULE
+        </label>
+        <label>
+            <input type="checkbox" name="SHOW_CLOSEST" {% if config.get('SHOW_CLOSEST') %}checked{% endif %}>
+            SHOW_CLOSEST
+        </label>
+
+        <label for="CLOSEST_COLOUR" style="margin-top: 0.8rem;">CLOSEST_COLOUR</label>
+        {% set cc = config.get('CLOSEST_COLOUR', {}) %}
+        <input type="color" id="CLOSEST_COLOUR" name="CLOSEST_COLOUR"
+               value="#{{ '%02x%02x%02x' | format(cc.get('r', 0), cc.get('g', 255), cc.get('b', 255)) }}">
+    </div>
+
+    <div class="card">
+        <h2>Tracking</h2>
+        <label for="MAX_HISTORY">MAX_HISTORY</label>
+        <input type="number" id="MAX_HISTORY" name="MAX_HISTORY" value="{{ config.get('MAX_HISTORY', '') }}">
+        <label for="POLL_CADENCE">POLL_CADENCE</label>
+        <input type="number" id="POLL_CADENCE" name="POLL_CADENCE" value="{{ config.get('POLL_CADENCE', '') }}">
+        <label for="FADE_FACTOR">FADE_FACTOR</label>
+        <input type="number" id="FADE_FACTOR" name="FADE_FACTOR" step="0.1" value="{{ config.get('FADE_FACTOR', '') }}">
+        <label for="MIN_ALT">MIN_ALT</label>
+        <input type="number" id="MIN_ALT" name="MIN_ALT" value="{{ config.get('MIN_ALT', '') }}">
+        <label for="UNSEEN_MARK_SECS">UNSEEN_MARK_SECS</label>
+        <input type="number" id="UNSEEN_MARK_SECS" name="UNSEEN_MARK_SECS" value="{{ config.get('UNSEEN_MARK_SECS', '') }}">
+        <label for="MAX_UNSEEN_SECS">MAX_UNSEEN_SECS</label>
+        <input type="number" id="MAX_UNSEEN_SECS" name="MAX_UNSEEN_SECS" value="{{ config.get('MAX_UNSEEN_SECS', '') }}">
+        <label for="LONLAT_DECIMALS">LONLAT_DECIMALS</label>
+        <input type="number" id="LONLAT_DECIMALS" name="LONLAT_DECIMALS" value="{{ config.get('LONLAT_DECIMALS', '') }}">
+    </div>
+
+    <div class="card">
+        <h2>Timeouts</h2>
+        <label for="MATRIX_HTTP_TIMEOUT">MATRIX_HTTP_TIMEOUT</label>
+        <input type="number" id="MATRIX_HTTP_TIMEOUT" name="MATRIX_HTTP_TIMEOUT" value="{{ config.get('MATRIX_HTTP_TIMEOUT', '') }}">
+        <label for="LCD_TIMEOUT">LCD_TIMEOUT</label>
+        <input type="number" id="LCD_TIMEOUT" name="LCD_TIMEOUT" value="{{ config.get('LCD_TIMEOUT', '') }}">
+        <label for="LOG_LEVEL">LOG_LEVEL</label>
+        <input type="text" id="LOG_LEVEL" name="LOG_LEVEL" value="{{ config.get('LOG_LEVEL', '') }}">
+    </div>
+
+    <button type="submit" style="margin-top: 0.5rem;">Save & Restart</button>
+</form>
+
+<script>
+document.getElementById('geolocate-btn').addEventListener('click', function() {
+    var btn = this;
+    if (!navigator.geolocation) {
+        alert('Geolocation is not supported by this browser.');
+        return;
+    }
+    btn.textContent = 'Locating...';
+    btn.disabled = true;
+    navigator.geolocation.getCurrentPosition(
+        function(pos) {
+            document.getElementById('LAT').value = pos.coords.latitude;
+            document.getElementById('LON').value = pos.coords.longitude;
+            btn.textContent = 'Use My Location';
+            btn.disabled = false;
+        },
+        function(err) {
+            alert('Could not get location: ' + err.message);
+            btn.textContent = 'Use My Location';
+            btn.disabled = false;
+        }
+    );
+});
+</script>
+{% endblock %}

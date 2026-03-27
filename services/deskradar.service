@@ -1,0 +1,20 @@
+[Unit]
+Description=Deskradar plotting Service
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+StartLimitBurst=0
+StartLimitAction=none
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/deskradar
+ExecStart=/opt/deskradar/.venv/bin/python -m app.main
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

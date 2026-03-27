@@ -1,0 +1,22 @@
+{
+  "LON": 0,
+  "LAT": 50,
+  "MAX_HISTORY": 30,
+  "POLL_CADENCE": 1,
+  "FADE_FACTOR": 0.9,
+  "MATRIX_SIZE_PX": 64,
+  "DISPLAY_RADIUS_NM": 10,
+  "MATRIX_HTTP_TIMEOUT": 2,
+  "LCD_TIMEOUT": 1,
+  "LONLAT_DECIMALS": 3, 
+  "GET_URL": "http://127.0.0.1:8080/data/aircraft.json",
+  "LCD_SEND_URL": "http://127.0.0.1:8000/display",
+  "LOG_LEVEL": "debug",
+  "UNSEEN_MARK_SECS": 10,
+  "MAX_UNSEEN_SECS": 20,
+  "DRAW_RETICULE": true,
+  "MIN_ALT": 500,
+  "SHOW_CLOSEST": true,
+  "CLOSEST_COLOUR": {"r": 0, "g": 255, "b": 255},
+  "MATRIX_HTTP_URL": "http://10.42.0.50"
+}

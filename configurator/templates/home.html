@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>DeskRadar Configurator</h1>
+
+<div class="card" style="text-align: center;">
+    <p style="margin-bottom: 0.5rem;">Current Mode</p>
+    <span class="mode-badge">{{ mode }} Mode</span>
+</div>
+
+{% if saved_connections %}
+<div class="card">
+    <h2>Saved Networks</h2>
+    {% for conn in saved_connections %}
+    <form method="POST" action="/switch-to-lan" style="margin-bottom: 0.5rem;">
+        <input type="hidden" name="name" value="{{ conn }}">
+        <button type="submit">{{ conn }}</button>
+    </form>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>New WiFi Connection</h2>
+    <form method="POST" action="/switch-to-lan">
+        <label for="ssid">SSID</label>
+        <input type="text" id="ssid" name="ssid" required>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+        <button type="submit">Connect</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Switch to AP Mode</h2>
+    <form method="POST" action="/switch-to-ap">
+        <button type="submit">Switch to AP Mode</button>
+    </form>
+</div>
+{% endblock %}
