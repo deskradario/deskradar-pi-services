@@ -1,0 +1,9 @@
+# configurator
+flask
+python-dotenv
+waitress
+
+# lcd
+fastapi
+uvicorn
+smbus2
