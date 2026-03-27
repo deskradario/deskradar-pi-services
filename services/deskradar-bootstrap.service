@@ -1,0 +1,16 @@
+[Unit]
+Description=Deskradar Boot Check Service
+After=local-fs.target
+StartLimitIntervalSec=0
+StartLimitBurst=0
+StartLimitAction=none
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/opt/deskradar-pi-services/.venv/bin/python /opt/deskradar-pi-services/scripts/boot_check.py
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,7 +1,8 @@
 [Unit]
 Description=Deskradar Configurator Service
-After=network-online.target
+After=network-online.target deskradar-bootstrap.service
 Wants=network-online.target
+Requires=deskradar-bootstrap.service
 StartLimitIntervalSec=0
 StartLimitBurst=0
 StartLimitAction=none
