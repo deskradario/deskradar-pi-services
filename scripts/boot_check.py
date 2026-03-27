@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-"""Boot script that reads IP from CIRCUITPYTHON USB device and writes it to deskradar config."""
+"""Boot script that reads IP from CIRCUITPY USB device and writes it to deskradar config."""
 
 import json
 import ipaddress
 import os
-import subprocess
 import syslog
 import time
 
 MEDIA_PATH = "/media/pi"
 TIMEOUT_SECS = 15
-REBOOT_DELAY_SECS = 5
 CONFIG_DIR = "/etc/deskradar"
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 CONFIG_EXAMPLE_PATH = "/opt/deskradar/config-example.json"
@@ -25,18 +23,18 @@ def log_error(msg):
 
 
 def find_device():
-    """Return the mount path of the first device with CIRCUITPYTHON in its name, or None."""
+    """Return the mount path of the first device with CIRCUITPY in its name, or None."""
     if not os.path.isdir(MEDIA_PATH):
         return None
     for name in os.listdir(MEDIA_PATH):
-        if "CIRCUITPYTHON" in name:
+        if "CIRCUITPY" in name:
             return os.path.join(MEDIA_PATH, name)
     return None
 
 
 def wait_for_device():
-    """Poll for a CIRCUITPYTHON device, rebooting if none appears within the timeout."""
-    log("Waiting for CIRCUITPYTHON device...")
+    """Poll for a CIRCUITPY device, exiting with error if none appears within the timeout."""
+    log("Waiting for CIRCUITPY device...")
     elapsed = 0
     while elapsed < TIMEOUT_SECS:
         device_path = find_device()
@@ -46,9 +44,7 @@ def wait_for_device():
         time.sleep(1)
         elapsed += 1
 
-    log_error(f"No CIRCUITPYTHON device found after {TIMEOUT_SECS}s. Rebooting in {REBOOT_DELAY_SECS}s.")
-    time.sleep(REBOOT_DELAY_SECS)
-    subprocess.run(["sudo", "reboot"])
+    log_error(f"No CIRCUITPY device found after {TIMEOUT_SECS}s.")
     raise SystemExit(1)
 
 

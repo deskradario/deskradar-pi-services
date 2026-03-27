@@ -1,9 +1,6 @@
 [Unit]
 Description=Deskradar Boot Check Service
 After=local-fs.target
-StartLimitIntervalSec=0
-StartLimitBurst=0
-StartLimitAction=none
 
 [Service]
 Type=oneshot
