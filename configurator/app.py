@@ -11,20 +11,25 @@ load_dotenv()
 
 app = Flask(__name__)
 
-MODE_FILE = Path("/etc/deskradar-configurator/mode.txt")
 CONFIG_FILE = Path("/etc/deskradar/config.json")
-AP_NAME = os.getenv("AP_NAME", "piAP")
+AP_NAME = os.getenv("AP_NAME", "deskradarAP")
 
 HIDDEN_KEYS = {"GET_URL", "LCD_SEND_URL", "MATRIX_HTTP_URL"}
 
 CHECKBOX_KEYS = {"DRAW_RETICULE", "SHOW_CLOSEST"}
 
 
-def read_mode():
-    try:
-        return MODE_FILE.read_text().strip()
-    except FileNotFoundError:
-        return "UNKNOWN"
+def infer_mode():
+    """Check active nmcli connections to determine AP or LAN mode."""
+    result = subprocess.run(
+        ["sudo", "nmcli", "-t", "-f", "NAME,TYPE", "connection", "show", "--active"],
+        capture_output=True, text=True,
+    )
+    for line in result.stdout.strip().splitlines():
+        name, conn_type = line.split(":")
+        if conn_type == "802-11-wireless" and name != AP_NAME:
+            return "LAN"
+    return "AP"
 
 
 def get_saved_wifi_connections():
@@ -43,7 +48,7 @@ def get_saved_wifi_connections():
 
 @app.route("/")
 def home():
-    mode = read_mode()
+    mode = infer_mode()
     saved = get_saved_wifi_connections()
     return render_template("home.html", mode=mode, saved_connections=saved)
 

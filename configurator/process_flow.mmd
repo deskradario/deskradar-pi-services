@@ -1,0 +1,86 @@
+flowchart TD
+    START([Waitress serves app on 0.0.0.0:5000]) --> NAV{User navigates to}
+
+    %% ── Home page ──
+    NAV -->|GET /| HOME_ROUTE[app.py: home]
+    HOME_ROUTE --> INFER[infer_mode: nmcli --active connections]
+    INFER --> MODE_CHECK{Non-AP wifi active?}
+    MODE_CHECK -->|Yes| MODE_LAN[mode = LAN]
+    MODE_CHECK -->|No| MODE_AP[mode = AP]
+    MODE_LAN --> GET_SAVED
+    MODE_AP --> GET_SAVED
+    GET_SAVED[get_saved_wifi_connections: nmcli all profiles] --> RENDER_HOME[Render home.html with mode + saved networks]
+    RENDER_HOME --> USER_ACTION{User action on home page}
+
+    %% ── Switch to LAN: saved network ──
+    USER_ACTION -->|Click saved network| LAN_SAVED[POST /switch-to-lan with name]
+    LAN_SAVED --> LAN_ROUTE[app.py: switch_to_lan]
+    LAN_ROUTE --> HAS_NAME{form has name?}
+    HAS_NAME -->|Yes| LAN_CMD_NAME["subprocess: switch_to_lan.py --name"]
+    HAS_NAME -->|No| LAN_CMD_NEW["subprocess: switch_to_lan.py --ssid --password"]
+
+    %% ── Switch to LAN: new network ──
+    USER_ACTION -->|Submit SSID + password| LAN_NEW[POST /switch-to-lan with ssid, password]
+    LAN_NEW --> LAN_ROUTE
+
+    %% ── switch_to_lan.py internals ──
+    LAN_CMD_NAME --> LAN_FIND_MOUNT
+    LAN_CMD_NEW --> LAN_FIND_MOUNT
+    LAN_FIND_MOUNT[Find CIRCUITPYTHON mount] --> MOUNT_EXISTS{Mount found?}
+    MOUNT_EXISTS -->|No| LAN_ABORT([Abort: exit 1])
+    MOUNT_EXISTS -->|Yes| LAN_GET_CREDS{Using saved profile?}
+    LAN_GET_CREDS -->|Yes| LAN_NM_CREDS[get_nm_credentials: extract SSID + PSK from nmcli]
+    LAN_GET_CREDS -->|No| LAN_USE_ARGS[Use provided SSID + password]
+    LAN_NM_CREDS --> LAN_DOWN_AP
+    LAN_USE_ARGS --> LAN_DOWN_AP
+    LAN_DOWN_AP["nmcli connection down deskradarAP"] --> LAN_CONNECT{Saved or new?}
+    LAN_CONNECT -->|Saved| LAN_UP["nmcli connection up {name}"]
+    LAN_CONNECT -->|New| LAN_WIFI_CONNECT["nmcli device wifi connect {ssid}"]
+    LAN_UP --> LAN_OK{Connection succeeded?}
+    LAN_WIFI_CONNECT --> LAN_OK
+    LAN_OK -->|No| LAN_FALLBACK["Re-raise AP: nmcli connection up deskradarAP"] --> LAN_ABORT
+    LAN_OK -->|Yes| LAN_WRITE_CREDS["Write SSID + password to CIRCUITPYTHON/wifi.txt"]
+    LAN_WRITE_CREDS --> LAN_DONE([Redirect to GET /])
+
+    %% ── Switch to AP ──
+    USER_ACTION -->|Click Switch to AP Mode| AP_POST[POST /switch-to-ap]
+    AP_POST --> AP_ROUTE[app.py: switch_to_ap]
+    AP_ROUTE --> AP_SUB["subprocess: switch_to_ap.py"]
+    AP_SUB --> AP_GET_ACTIVE[get_active_wifi: find non-AP active wifi]
+    AP_GET_ACTIVE --> AP_HAS_ACTIVE{Active LAN connection?}
+    AP_HAS_ACTIVE -->|Yes| AP_DOWN["nmcli connection down {active}"]
+    AP_HAS_ACTIVE -->|No| AP_RAISE
+    AP_DOWN --> AP_RAISE["nmcli connection up deskradarAP"]
+    AP_RAISE --> AP_OK{AP raised?}
+    AP_OK -->|No| AP_FAIL([Abort: exit 1])
+    AP_OK -->|Yes| AP_DONE([Redirect to GET /])
+
+    %% ── Config page ──
+    NAV -->|GET /config| CONFIG_ROUTE[app.py: config]
+    CONFIG_ROUTE --> READ_CFG["Read /etc/deskradar/config.json"]
+    READ_CFG --> RENDER_CONFIG[Render config.html with current values]
+    RENDER_CONFIG --> CONFIG_ACTION{User action on config page}
+
+    %% ── Config save ──
+    CONFIG_ACTION -->|Click Save & Restart| CONFIG_POST[POST /config]
+    CONFIG_POST --> CONFIG_POST_ROUTE[app.py: config_post]
+    CONFIG_POST_ROUTE --> MERGE_CFG["Read existing config, merge form values"]
+    MERGE_CFG --> TYPE_COERCE["Type coercion: int/float/str per original types"]
+    TYPE_COERCE --> CHECKBOX["Handle checkboxes: DRAW_RETICULE, SHOW_CLOSEST"]
+    CHECKBOX --> COLOUR["Convert hex colour to RGB dict"]
+    COLOUR --> UPDATE_SUB["subprocess: update_config.py (JSON on stdin)"]
+    UPDATE_SUB --> WRITE_CFG["Write merged config to /etc/deskradar/config.json"]
+    WRITE_CFG --> RESTART["systemctl restart deskradar"]
+    RESTART --> RESTART_OK{Restart succeeded?}
+    RESTART_OK -->|No| CFG_FAIL([Exit 1: restart failed])
+    RESTART_OK -->|Yes| CFG_DONE([Redirect to GET /config])
+
+    %% ── Geolocation (client-side) ──
+    CONFIG_ACTION -->|Click Use My Location| GEO["Browser geolocation API"]
+    GEO --> GEO_FILL["Auto-fill LAT + LON fields"]
+    GEO_FILL --> CONFIG_ACTION
+
+    %% ── Navigation ──
+    LAN_DONE --> HOME_ROUTE
+    AP_DONE --> HOME_ROUTE
+    CFG_DONE --> CONFIG_ROUTE

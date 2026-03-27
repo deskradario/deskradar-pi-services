@@ -1,16 +1,15 @@
 import argparse
 import glob
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
-AP_NAME = os.getenv("AP_NAME", "piAP")
-MODE_FILE = Path("/etc/deskradar-configurator/mode.txt")
+AP_NAME = os.getenv("AP_NAME", "deskradarAP")
 
 
 def run(cmd):
@@ -45,9 +44,34 @@ def get_nm_credentials(profile_name):
     return ssid_result.stdout.strip(), psk_result.stdout.strip()
 
 
+MAX_RETRIES = 3
+
+
+def bring_up(connection, retries=MAX_RETRIES):
+    """Try to bring up a connection, retrying on failure."""
+    for attempt in range(1, retries + 1):
+        rc = run(["sudo", "nmcli", "connection", "up", connection])
+        if rc == 0:
+            return True
+        print(f"Attempt {attempt}/{retries} failed for {connection}")
+    return False
+
+
+def connect_wifi(ssid, password, retries=MAX_RETRIES):
+    """Try to connect to a new wifi network, retrying on failure."""
+    for attempt in range(1, retries + 1):
+        rc = run([
+            "nmcli", "device", "wifi", "connect", ssid,
+            "password", password,
+        ])
+        if rc == 0:
+            return True
+        print(f"Attempt {attempt}/{retries} failed for {ssid}")
+    return False
+
+
 def main():
     parser = argparse.ArgumentParser()
-    # Either reconnect to a saved profile or create a new one
     parser.add_argument("--name", help="Existing connection profile name to activate")
     parser.add_argument("--ssid", help="SSID for a new connection")
     parser.add_argument("--password", help="Password for a new connection")
@@ -66,28 +90,25 @@ def main():
     else:
         ssid, password = args.ssid, args.password
 
-    # Bring down AP (don't delete it)
     run(["sudo", "nmcli", "connection", "down", AP_NAME])
 
     if args.name:
-        # Activate an existing saved connection
-        rc = run(["nmcli", "connection", "up", args.name])
+        connected = bring_up(args.name)
     else:
-        rc = run([
-            "nmcli", "device", "wifi", "connect", ssid,
-            "password", password,
-        ])
+        connected = connect_wifi(ssid, password)
 
-    if rc != 0:
-        print("WiFi connection failed, re-raising AP")
-        run(["sudo", "nmcli", "connection", "up", AP_NAME])
+    if not connected:
+        print("WiFi connection failed, re-raising AP", file=sys.stderr)
+        if bring_up(AP_NAME):
+            print("AP restored")
+        else:
+            print("CRITICAL: failed to connect to WiFi and failed to restore AP", file=sys.stderr)
         sys.exit(1)
 
     wifi_file = mount / "wifi.txt"
     wifi_file.write_text(f"{ssid}\n{password}\n")
     print(f"Wrote wifi credentials to {wifi_file}")
 
-    MODE_FILE.write_text("LAN\n")
     print("Switched to LAN mode")
 
 

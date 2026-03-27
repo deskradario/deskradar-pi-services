@@ -1,14 +1,12 @@
+import os
 import subprocess
 import sys
-from pathlib import Path
 
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
-AP_NAME = os.getenv("AP_NAME", "piAP")
-MODE_FILE = Path("/etc/deskradar-configurator/mode.txt")
+AP_NAME = os.getenv("AP_NAME", "deskradarAP")
 
 
 def run(cmd):
@@ -34,21 +32,36 @@ def get_active_wifi():
     return None
 
 
+MAX_RETRIES = 3
+
+
+def bring_up(connection, retries=MAX_RETRIES):
+    """Try to bring up a connection, retrying on failure."""
+    for attempt in range(1, retries + 1):
+        rc = run(["sudo", "nmcli", "connection", "up", connection])
+        if rc == 0:
+            return True
+        print(f"Attempt {attempt}/{retries} failed for {connection}")
+    return False
+
+
 def main():
-    # Bring down active WiFi connection (don't delete it)
     active = get_active_wifi()
     if active:
         run(["sudo", "nmcli", "connection", "down", active])
 
-    # Raise AP
-    rc = run(["sudo", "nmcli", "connection", "up", AP_NAME])
+    if bring_up(AP_NAME):
+        print("Switched to AP mode")
+        return
 
-    if rc != 0:
-        print("Failed to raise AP", file=sys.stderr)
+    # AP failed — restore the LAN connection we just tore down
+    print("Failed to raise AP, falling back to previous connection", file=sys.stderr)
+    if active and bring_up(active):
+        print(f"Restored LAN connection: {active}", file=sys.stderr)
         sys.exit(1)
 
-    MODE_FILE.write_text("AP\n")
-    print("Switched to AP mode")
+    print("CRITICAL: failed to raise AP and failed to restore LAN", file=sys.stderr)
+    sys.exit(1)
 
 
 if __name__ == "__main__":
