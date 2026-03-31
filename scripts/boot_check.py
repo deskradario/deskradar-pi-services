@@ -6,6 +6,7 @@ import ipaddress
 import os
 import syslog
 import time
+import requests
 
 MEDIA_PATH = "/media/deskradar"
 CONFIG_DIR = "/etc/deskradar"
@@ -16,6 +17,15 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 CONFIG_EXAMPLE_PATH = "/opt/deskradar/config-example.json"
 MATRIX_URL_CONFIG_KEY = "MATRIX_HTTP_URL"
 BYPASS = os.environ.get("DESKRADAR_BYPASS_BOOT", "")
+LCD_URL = "http://127.0.0.1:8010/display"
+
+
+def lcd_log(line1, line2=""):
+    """Send a status message to the LCD. Non-fatal on failure."""
+    try:
+        requests.post(LCD_URL, json={"line1": line1, "line2": line2}, timeout=5)
+    except Exception:
+        pass
 
 
 def journal_log(msg):
@@ -112,11 +122,19 @@ def main():
     syslog.openlog("boot_check", syslog.LOG_PID, syslog.LOG_DAEMON)
     if BYPASS.lower() == "true":
         journal_log("bypassing boot checks...")
+        lcd_log("Boot check", "Bypassed")
         return
 
+    lcd_log("Waiting for", "CIRCUITPY...")
     device_path = wait_for_device()
+
+    lcd_log("CIRCUITPY found", "Reading IP...")
     ip = read_ip(device_path)
+
+    lcd_log(f"IP: {ip}", "Writing config...")
     write_config(ip)
+
+    lcd_log("Boot check", "Complete")
     journal_log("Boot check complete.")
 
 

@@ -3,6 +3,9 @@ flask
 python-dotenv
 waitress
 
+# boot check
+requests
+
 # lcd
 fastapi
 uvicorn
