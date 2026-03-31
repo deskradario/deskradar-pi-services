@@ -8,11 +8,14 @@ import syslog
 import time
 import requests
 
+# wait for shit to be alive
+time.sleep(10)
+
 MEDIA_PATH = "/media/deskradar"
 CONFIG_DIR = "/etc/deskradar"
 IP_FILE_NAME = "ip.txt"
-DEVICE_TIMEOUT_SECS = 30
-IP_FILE_TIMEOUT_SECS = 30
+DEVICE_TIMEOUT_SECS = 5
+IP_FILE_TIMEOUT_SECS = 5
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 CONFIG_EXAMPLE_PATH = "/opt/deskradar/config-example.json"
 MATRIX_URL_CONFIG_KEY = "MATRIX_HTTP_URL"
