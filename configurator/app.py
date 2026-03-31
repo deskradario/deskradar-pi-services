@@ -168,6 +168,16 @@ def ensure_cert():
 
 
 if __name__ == "__main__":
+    import ssl
+    from waitress import create_server
+
     cert, key = ensure_cert()
+
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.load_cert_chain(cert, key)
+
+    server = create_server(app, host="0.0.0.0", port=5000)
+    server.socket = ctx.wrap_socket(server.socket, server_side=True)
+
     print("Serving on https://0.0.0.0:5000")
-    app.run(host="0.0.0.0", port=5000, ssl_context=(cert, key))
+    server.run()
