@@ -15,6 +15,7 @@ IP_FILE_TIMEOUT_SECS = 30
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 CONFIG_EXAMPLE_PATH = "/opt/deskradar/config-example.json"
 MATRIX_URL_CONFIG_KEY = "MATRIX_HTTP_URL"
+BYPASS = os.environ.get("DESKRADAR_BYPASS_BOOT", "")
 
 
 def journal_log(msg):
@@ -99,16 +100,20 @@ def write_config(ip):
             config = json.load(f)
         journal_log(f"Creating new config at {CONFIG_PATH} from {CONFIG_EXAMPLE_PATH}")
 
-    config[MATRIX_URL_CONFIG_KEY] = f"http://{ip}"
+    config[MATRIX_URL_CONFIG_KEY] = f"http://{ip}:80"
 
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
 
-    journal_log(f"{MATRIX_URL_CONFIG_KEY} set to http://{ip}")
+    journal_log(f"{MATRIX_URL_CONFIG_KEY} set to http://{ip}:80")
 
 
 def main():
     syslog.openlog("boot_check", syslog.LOG_PID, syslog.LOG_DAEMON)
+    if BYPASS.lower() == "true":
+        journal_log("bypassing boot checks...")
+        return
+
     device_path = wait_for_device()
     ip = read_ip(device_path)
     write_config(ip)
