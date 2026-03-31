@@ -74,6 +74,12 @@ last_message: LCDMessage | None = None
 app = FastAPI()
 
 
+@app.on_event("startup")
+def show_waiting():
+    lcd.clear()
+    lcd.write_line("waiting...")
+
+
 @app.post("/display")
 def display_message(msg: LCDMessage):
     global last_message
