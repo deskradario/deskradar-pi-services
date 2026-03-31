@@ -101,7 +101,7 @@ def connect_wifi(ssid, password, retries=MAX_RETRIES):
     """Try to connect to a new wifi network, retrying on failure."""
     for attempt in range(1, retries + 1):
         rc = run([
-            "nmcli", "device", "wifi", "connect", ssid,
+            "sudo", "nmcli", "device", "wifi", "connect", ssid,
             "password", password,
         ])
         if rc == 0:
