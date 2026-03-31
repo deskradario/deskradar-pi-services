@@ -1,8 +1,6 @@
 [Unit]
 Description=Plane Tracker LCD Service
-After=network-online.target deskradar-bootstrap.service
-Wants=network-online.target
-Requires=deskradar-bootstrap.service
+After=local-fs.target
 StartLimitIntervalSec=0
 StartLimitBurst=0
 StartLimitAction=none

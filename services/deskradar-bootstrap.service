@@ -1,6 +1,7 @@
 [Unit]
 Description=Deskradar Boot Check Service
-After=local-fs.target
+After=local-fs.target deskradar-lcd.service
+Requires=deskradar-lcd.service
 
 [Service]
 Type=oneshot
