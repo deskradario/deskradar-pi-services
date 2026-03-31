@@ -60,8 +60,11 @@ def wait_for_device():
             return None
 
         candidates = sorted(media_root.glob("CIRCUITPY*"))
+        journal_log(f"candidates: {candidates}")
 
         for path in candidates:
+            journal_log(f"trying: {path}")
+
             try:
                 if not path.is_dir():
                     continue
