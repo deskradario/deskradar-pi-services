@@ -58,9 +58,15 @@ def wait_for_device():
     journal_log("Waiting for CIRCUITPY device...")
 
     def readable_circuitpy_mount():
+        journal_log("checking mount path...")
+
         media_root = Path("/media") / os.getenv("USER", "")
+        journal_log(f"media root: {media_root}")
         if not media_root.exists():
+            journal_log(f"media root does not exist")
             return None
+        
+        journal_log(f"media root exists")
 
         candidates = sorted(media_root.glob("CIRCUITPY*"))
         journal_log(f"candidates: {candidates}")
