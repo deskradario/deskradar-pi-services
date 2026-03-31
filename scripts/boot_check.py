@@ -46,20 +46,49 @@ def detect_target_volume():
     return None
 
 
+from pathlib import Path
+import os
+import time
+
 def wait_for_device():
-    """Poll for a CIRCUITPY device, exiting with error if none appears within the timeout."""
+    """Poll for a readable CIRCUITPY mount and return its path."""
     journal_log("Waiting for CIRCUITPY device...")
+
+    def readable_circuitpy_mount():
+        media_root = Path("/media") / os.getenv("USER", "")
+        if not media_root.exists():
+            return None
+
+        candidates = sorted(media_root.glob("CIRCUITPY*"))
+
+        for path in candidates:
+            try:
+                if not path.is_dir():
+                    continue
+    
+                next(path.iterdir(), None)
+
+                if not (path / "boot_out.txt").exists():
+                    continue
+
+                return str(path)
+
+            except (OSError, PermissionError):
+                continue
+
+        return None
 
     elapsed = 0
     while elapsed < DEVICE_TIMEOUT_SECS:
-        device_path = detect_target_volume()
+        device_path = readable_circuitpy_mount()
         if device_path:
             journal_log(f"CIRCUITPY found after {elapsed}s at {device_path}")
             return device_path
+
         time.sleep(1)
         elapsed += 1
 
-    journal_log_error(f"No CIRCUITPY device found after {DEVICE_TIMEOUT_SECS}s.")
+    journal_log_error(f"No readable CIRCUITPY device found after {DEVICE_TIMEOUT_SECS}s.")
     raise SystemExit(1)
 
 
