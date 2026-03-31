@@ -32,4 +32,7 @@ build/
 # Logs
 *.log
 
+# Generated TLS certs
+certs/
+
 CLAUDE.md

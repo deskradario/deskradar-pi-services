@@ -115,7 +115,10 @@ def config_post():
         # Try to coerce to the original type
         orig = cfg.get(key)
         if isinstance(orig, int):
-            cfg[key] = int(raw)
+            try:
+                cfg[key] = int(raw)
+            except ValueError:
+                cfg[key] = float(raw)
         elif isinstance(orig, float):
             cfg[key] = float(raw)
         else:
@@ -147,7 +150,24 @@ def config_post():
     return redirect(url_for("config"))
 
 
+def ensure_cert():
+    """Generate a self-signed cert if one doesn't exist yet."""
+    cert_dir = Path(__file__).parent / "certs"
+    cert_file = cert_dir / "cert.pem"
+    key_file = cert_dir / "key.pem"
+
+    if not cert_file.exists():
+        cert_dir.mkdir(exist_ok=True)
+        subprocess.run([
+            "openssl", "req", "-x509", "-newkey", "rsa:2048",
+            "-keyout", str(key_file), "-out", str(cert_file),
+            "-days", "3650", "-nodes", "-subj", "/CN=deskradar",
+        ], check=True)
+
+    return str(cert_file), str(key_file)
+
+
 if __name__ == "__main__":
-    from waitress import serve
-    print("Serving on 0.0.0.0:5000")
-    serve(app, host="0.0.0.0", port=5000)
+    cert, key = ensure_cert()
+    print("Serving on https://0.0.0.0:5000")
+    app.run(host="0.0.0.0", port=5000, ssl_context=(cert, key))

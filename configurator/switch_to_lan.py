@@ -1,8 +1,8 @@
 import argparse
-import glob
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 AP_NAME = os.getenv("AP_NAME", "deskradarAP")
+DEVICE_TIMEOUT_SECS = int(os.getenv("DEVICE_TIMEOUT_SECS", "60"))
 
 
 def run(cmd):
@@ -22,11 +23,50 @@ def run(cmd):
     return result.returncode
 
 
-def find_circuitpython_mount():
-    mounts = glob.glob("/media/*/CIRCUITPYTHON*")
-    if not mounts:
+def wait_for_device():
+    """Poll for a readable CIRCUITPY mount and return its path."""
+    print("Waiting for CIRCUITPY device...")
+
+    def readable_circuitpy_mount():
+        media_root = Path("/media") / os.getenv("USER", "")
+        if not media_root.exists():
+            return None
+
+        candidates = sorted(media_root.glob("CIRCUITPY*"))
+
+        for path in candidates:
+            try:
+                if not path.is_dir():
+                    continue
+
+                # Must be listable/readable
+                next(path.iterdir(), None)
+
+                # Optional extra guard: CIRCUITPY root should usually contain boot_out.txt
+                # Remove this check if you do not want it.
+                if not (path / "boot_out.txt").exists():
+                    continue
+
+                return str(path)
+
+            except (OSError, PermissionError):
+                # Stale/unreadable mount
+                continue
+
         return None
-    return Path(mounts[0])
+
+    elapsed = 0
+    while elapsed < DEVICE_TIMEOUT_SECS:
+        device_path = readable_circuitpy_mount()
+        if device_path:
+            print(f"CIRCUITPY found after {elapsed}s at {device_path}")
+            return Path(device_path)
+
+        time.sleep(1)
+        elapsed += 1
+
+    print(f"No readable CIRCUITPY device found after {DEVICE_TIMEOUT_SECS}s.", file=sys.stderr)
+    sys.exit(1)
 
 
 def get_nm_credentials(profile_name):
@@ -80,10 +120,7 @@ def main():
     if not args.name and not (args.ssid and args.password):
         parser.error("Provide either --name or both --ssid and --password")
 
-    mount = find_circuitpython_mount()
-    if mount is None:
-        print("No CIRCUITPYTHON mount found, aborting", file=sys.stderr)
-        sys.exit(1)
+    mount = wait_for_device()
 
     if args.name:
         ssid, password = get_nm_credentials(args.name)
