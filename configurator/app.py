@@ -150,34 +150,7 @@ def config_post():
     return redirect(url_for("config"))
 
 
-def ensure_cert():
-    """Generate a self-signed cert if one doesn't exist yet."""
-    cert_dir = Path(__file__).parent / "certs"
-    cert_file = cert_dir / "cert.pem"
-    key_file = cert_dir / "key.pem"
-
-    if not cert_file.exists():
-        cert_dir.mkdir(exist_ok=True)
-        subprocess.run([
-            "openssl", "req", "-x509", "-newkey", "rsa:2048",
-            "-keyout", str(key_file), "-out", str(cert_file),
-            "-days", "3650", "-nodes", "-subj", "/CN=deskradar",
-        ], check=True)
-
-    return str(cert_file), str(key_file)
-
-
 if __name__ == "__main__":
-    import ssl
-    from waitress import create_server
-
-    cert, key = ensure_cert()
-
-    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    ctx.load_cert_chain(cert, key)
-
-    server = create_server(app, host="0.0.0.0", port=5000)
-    server.socket = ctx.wrap_socket(server.socket, server_side=True)
-
-    print("Serving on https://0.0.0.0:5000")
-    server.run()
+    from waitress import serve
+    print("Serving on 0.0.0.0:5000")
+    serve(app, host="0.0.0.0", port=5000)
