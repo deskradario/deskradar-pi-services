@@ -35,4 +35,3 @@ build/
 # Generated TLS certs
 certs/
 
-CLAUDE.md
