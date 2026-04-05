@@ -2,3 +2,4 @@ cp services/* /etc/systemd/system/
 systemctl enable deskradar.service
 systemctl enable deskradar-lcd.service
 systemctl enable deskradar-configurator.service
+systemctl enable deskradar-bootstrap.service
