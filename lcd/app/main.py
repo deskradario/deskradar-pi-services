@@ -18,10 +18,9 @@ BACKSLASH_CHAR = [
 
 # ----- LCD Setup -----
 class LCD1602:
-    def __init__(self, addr=0x3e, backlight_addr=0x6b, port=1):
+    def __init__(self, addr=0x3e, port=1):
         self.bus = SMBus(port)
         self.addr = addr
-        self.bl_addr = backlight_addr
         self._init_lcd()
 
     def _send(self, data, mode):
@@ -40,14 +39,7 @@ class LCD1602:
         self._send(0x0C, 0x00)
         self._send(0x01, 0x00)
         sleep(0.002)
-        self._init_backlight()
         self._load_custom_chars()
-
-    def _init_backlight(self):
-        # PCA9633-style LED driver: wake up, then all outputs on full
-        self.bus.write_byte_data(self.bl_addr, 0x00, 0x00)  # MODE1: normal mode
-        self.bus.write_byte_data(self.bl_addr, 0x08, 0xFF)  # LEDOUT: all on full
-        self.bus.write_byte_data(self.bl_addr, 0x01, 0x00)  # MODE2: default
 
     def _load_custom_chars(self):
         self._send(0x40, 0x00)
